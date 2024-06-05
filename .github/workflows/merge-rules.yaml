@@ -6,7 +6,7 @@ on:
 
 jobs:
   pre-merge:
-    if: github.event.pull_request.merged == true && failure()
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
 
     steps:
@@ -43,6 +43,5 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Merge the pull request
-        if: success()
         run: |
           gh pr merge ${{ github.event.pull_request.number }} --merge --admin --delete-branch
