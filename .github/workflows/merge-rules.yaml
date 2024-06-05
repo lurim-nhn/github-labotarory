@@ -1,25 +1,26 @@
-name: Save Merge Commit Hash
+name: Pre-Merge and Merge
 
 on:
   pull_request:
     types: [closed]
-    branches:
-      - '**'  # 모든 브랜치에 대해 PR 머지 이벤트 트리거
 
 jobs:
-  save-commit-hash:
-    runs-on: ubuntu-latest
+  pre-merge:
     if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
 
       - name: Get the merge commit hash
         id: get-merge-hash
-        run: echo "::set-output name=MERGE_COMMIT::$(git rev-parse HEAD)"
+        run: |
+          # 여기서 아직 머지되지 않았으므로 임의의 해시를 사용
+          echo "MERGE_COMMIT=$(git rev-parse HEAD)" >> $GITHUB_ENV
 
       - name: Append merge commit hash to file
-        run: echo "${{ steps.get-merge-hash.outputs.MERGE_COMMIT }} - PR #${{ github.event.pull_request.number }}" >> merged_commits.txt
+        run: echo "${MERGE_COMMIT} - PR #${{ github.event.pull_request.number }}" >> merged_commit_hash.txt
 
       - name: Configure Git
         run: |
@@ -28,6 +29,18 @@ jobs:
 
       - name: Commit and push changes
         run: |
-          git add merged_commits.txt
+          git add merged_commit_hash.txt
           git commit -m "Add merge commit hash for PR #${{ github.event.pull_request.number }}"
           git push
+
+  merge-pr:
+    needs: pre-merge
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Merge the pull request
+        run: |
+          gh pr merge ${{ github.event.pull_request.number }} --merge --admin --delete-branch
