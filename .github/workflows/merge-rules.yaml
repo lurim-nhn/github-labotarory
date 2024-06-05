@@ -6,7 +6,7 @@ on:
 
 jobs:
   pre-merge:
-    if: github.event.pull_request.merged == true
+    if: github.event.pull_request.merged == true && failure()
     runs-on: ubuntu-latest
 
     steps:
@@ -20,7 +20,8 @@ jobs:
           echo "MERGE_COMMIT=$(git rev-parse HEAD)" >> $GITHUB_ENV
 
       - name: Append merge commit hash to file
-        run: echo "${MERGE_COMMIT} - PR #${{ github.event.pull_request.number }}" >> merged_commit_hash.txt
+        run: |
+          echo "${{ env.MERGE_COMMIT }} - PR #${{ github.event.pull_request.number }}" >> merged_commit_hash.txt
 
       - name: Configure Git
         run: |
@@ -42,5 +43,6 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Merge the pull request
+        if: success()
         run: |
           gh pr merge ${{ github.event.pull_request.number }} --merge --admin --delete-branch
