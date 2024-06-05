@@ -1,0 +1,33 @@
+name: Save Merge Commit Hash
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - '**'  # 모든 브랜치에 대해 PR 머지 이벤트 트리거
+
+jobs:
+  save-commit-hash:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == true
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Get the merge commit hash
+        id: get-merge-hash
+        run: echo "::set-output name=MERGE_COMMIT::$(git rev-parse HEAD)"
+
+      - name: Append merge commit hash to file
+        run: echo "${{ steps.get-merge-hash.outputs.MERGE_COMMIT }} - PR #${{ github.event.pull_request.number }}" >> merged_commits.txt
+
+      - name: Configure Git
+        run: |
+          git config --global user.name 'github-actions'
+          git config --global user.email 'github-actions@github.com'
+
+      - name: Commit and push changes
+        run: |
+          git add merged_commits.txt
+          git commit -m "Add merge commit hash for PR #${{ github.event.pull_request.number }}"
+          git push
